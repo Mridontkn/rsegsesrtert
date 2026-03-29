@@ -448,6 +448,124 @@
     }
     .restart-btn:hover { opacity: 0.8; }
 
+    /* Hard mode canvas glow */
+    body.hard-mode canvas {
+      border-color: var(--red);
+      box-shadow: 0 0 30px rgba(255,58,58,0.3), 0 0 60px rgba(255,58,58,0.1);
+    }
+    body.hard-mode h1 { color: var(--red); text-shadow: 0 0 20px var(--red), 0 0 40px rgba(255,58,58,0.3); }
+
+    /* Timer bar */
+    .timer-wrap {
+      width: 500px;
+      display: none;
+    }
+    .timer-wrap.visible { display: block; }
+    .timer-outer {
+      background: #1a1a3a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .timer-inner {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), #aaff00);
+      border-radius: 4px;
+      transition: width 0.1s linear, background 0.3s;
+    }
+    .timer-inner.warning { background: linear-gradient(90deg, var(--red), #ff8800); }
+    .timer-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--dimtext);
+      text-align: right;
+      margin-top: 3px;
+    }
+
+    /* Mode select screen */
+    #modeScreen {
+      display: flex;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,10,0.97);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 24px;
+      padding: 20px;
+    }
+    #modeScreen.hidden { display: none; }
+
+    .mode-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 3vw, 24px);
+      color: var(--accent);
+      text-shadow: 0 0 20px var(--accent);
+      text-align: center;
+    }
+
+    .mode-cards {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .mode-card {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      width: 220px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      text-align: center;
+    }
+    .mode-card:hover { transform: translateY(-4px); }
+    .mode-card.normal:hover  { border-color: var(--accent);  box-shadow: 0 0 30px rgba(0,229,255,0.2); }
+    .mode-card.hard:hover    { border-color: var(--red);     box-shadow: 0 0 30px rgba(255,58,58,0.3); }
+
+    .mode-card .mode-icon { font-size: 48px; margin-bottom: 12px; }
+    .mode-card .mode-name {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+    .mode-card.normal .mode-name { color: var(--accent); }
+    .mode-card.hard   .mode-name { color: var(--red); }
+
+    .mode-card .mode-desc {
+      font-size: 10px;
+      color: var(--dimtext);
+      line-height: 1.7;
+    }
+    .mode-card .mode-tag {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 8px;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .mode-card.normal .mode-tag { background: rgba(0,229,255,0.1); color: var(--accent); border: 1px solid var(--accent); }
+    .mode-card.hard   .mode-tag { background: rgba(255,58,58,0.1); color: var(--red);    border: 1px solid var(--red); }
+
+    /* Hard mode badge in HUD */
+    .hard-badge {
+      display: none;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--red);
+      background: rgba(255,58,58,0.12);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      padding: 4px 8px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .hard-badge.visible { display: block; }
+
     /* Scrollbar */
     .log-panel::-webkit-scrollbar { width: 4px; }
     .log-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -455,14 +573,47 @@
 </head>
 <body>
 
+<!-- Mode Select Screen -->
+<div id="modeScreen">
+  <div class="mode-title">⚔ EQAO QUEST</div>
+  <p style="font-size:9px;color:var(--dimtext);letter-spacing:2px">SELECT DIFFICULTY</p>
+  <div class="mode-cards">
+    <div class="mode-card normal" onclick="startMode('normal')">
+      <div class="mode-icon">🛡️</div>
+      <div class="mode-name">NORMAL</div>
+      <div class="mode-desc">
+        5 HP to start<br>
+        Hints shown on wrong answers<br>
+        Lose 1 HP per mistake<br>
+        No time limit
+      </div>
+      <span class="mode-tag">RECOMMENDED</span>
+    </div>
+    <div class="mode-card hard" onclick="startMode('hard')">
+      <div class="mode-icon">💀</div>
+      <div class="mode-name">HARD MODE</div>
+      <div class="mode-desc">
+        3 HP to start<br>
+        No hints ever<br>
+        Lose 2 HP per mistake<br>
+        15-second timer per question<br>
+        Shuffled answer choices
+      </div>
+      <span class="mode-tag">DANGER ZONE</span>
+    </div>
+  </div>
+</div>
+
 <h1>⚔ EQAO QUEST</h1>
-<p class="subtitle">Grade 6 Math & English — Defeat ALL enemies to unlock the treasure!</p>
+<p class="subtitle" id="subtitleText">Grade 6 Math & English — Defeat ALL enemies to unlock the treasure!</p>
 
 <div class="game-wrapper">
 
   <!-- Left HUD -->
   <div class="hud-panel">
     <div class="hud-title">◈ HERO</div>
+
+    <div class="hard-badge" id="hardBadge">⚠ HARD MODE</div>
 
     <div class="stat-row">
       <span class="stat-label">❤ Health</span>
@@ -516,6 +667,10 @@
   <div class="canvas-area">
     <canvas id="gameCanvas" width="500" height="400"></canvas>
     <span class="map-label">ARROW KEYS OR BUTTONS TO MOVE</span>
+    <div class="timer-wrap" id="timerWrap">
+      <div class="timer-outer"><div class="timer-inner" id="timerBar" style="width:100%"></div></div>
+      <div class="timer-label" id="timerLabel">15s</div>
+    </div>
     <div class="log-panel" id="logPanel"></div>
   </div>
 
@@ -547,7 +702,10 @@
 <div class="end-screen" id="endScreen">
   <div class="end-title" id="endTitle">GAME OVER</div>
   <div class="end-stats" id="endStats"></div>
-  <button class="restart-btn" onclick="initGame()">▶ PLAY AGAIN</button>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="restart-btn" onclick="initGame(currentMode)">▶ PLAY AGAIN</button>
+    <button class="restart-btn" style="background:var(--border);color:var(--text)" onclick="showModeSelect()">⚙ CHANGE MODE</button>
+  </div>
 </div>
 
 <script>
@@ -703,16 +861,36 @@ const TILE = 20;
 const COLS = 500 / TILE;  // 25
 const ROWS = 400 / TILE;  // 20
 const MAX_HP = 5;
+const HARD_HP = 3;
+const HARD_TIMER = 15; // seconds
+
+let currentMode = 'normal';
+let hardMode = false;
+let timerInterval = null;
+let timerSecondsLeft = 0;
 
 let player, enemies, healthPacks, treasure, score, streak, kills, gameActive, battleQ, battleCallback, treasureUnlocked;
 
 const canvas  = document.getElementById("gameCanvas");
 const ctx     = canvas.getContext("2d");
 
-function initGame() {
+function initGame(mode) {
+  mode = mode || currentMode;
+  currentMode = mode;
+  hardMode = (mode === 'hard');
+
   document.getElementById("endScreen").classList.remove("active");
 
-  player = { x:1, y:1, hp: MAX_HP };
+  // Visual theme
+  document.body.classList.toggle('hard-mode', hardMode);
+  document.getElementById("hardBadge").classList.toggle('visible', hardMode);
+  document.getElementById("subtitleText").textContent = hardMode
+    ? "⚠ HARD MODE — No hints · 15s timer · 2 HP damage!"
+    : "Grade 6 Math & English — Defeat ALL enemies to unlock the treasure!";
+  document.getElementById("timerWrap").classList.toggle('visible', hardMode);
+
+  const startHp = hardMode ? HARD_HP : MAX_HP;
+  player = { x:1, y:1, hp: startHp, maxHp: startHp };
 
   enemies = [
     // Math enemies
@@ -766,7 +944,7 @@ function initGame() {
 //  HUD
 // ─────────────────────────────────────────────
 function updateHUD() {
-  document.getElementById("hpVal").textContent    = player.hp + " / " + MAX_HP;
+  document.getElementById("hpVal").textContent    = player.hp + " / " + player.maxHp;
   document.getElementById("scoreVal").textContent = score;
   document.getElementById("killVal").textContent  = kills;
   document.getElementById("streakVal").textContent= streak;
@@ -775,10 +953,10 @@ function updateHUD() {
   const remEl = document.getElementById("remainVal");
   if (remEl) remEl.textContent = remaining;
 
-  const pct = (player.hp / MAX_HP * 100) + "%";
+  const pct = (player.hp / player.maxHp * 100) + "%";
   const bar = document.getElementById("hpBar");
   bar.style.width = pct;
-  bar.className   = "hp-bar-inner" + (player.hp <= 2 ? " low" : "");
+  bar.className   = "hp-bar-inner" + (player.hp <= 1 ? " low" : "");
 }
 
 // ─────────────────────────────────────────────
@@ -946,6 +1124,45 @@ function move(dir) {
 }
 
 // ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function startTimer(onExpire) {
+  stopTimer();
+  if (!hardMode) return;
+  timerSecondsLeft = HARD_TIMER;
+  updateTimerBar();
+  timerInterval = setInterval(() => {
+    timerSecondsLeft -= 0.1;
+    updateTimerBar();
+    if (timerSecondsLeft <= 0) {
+      stopTimer();
+      onExpire();
+    }
+  }, 100);
+}
+
+function updateTimerBar() {
+  const pct = Math.max(0, (timerSecondsLeft / HARD_TIMER) * 100);
+  const bar = document.getElementById("timerBar");
+  bar.style.width = pct + "%";
+  bar.className = "timer-inner" + (timerSecondsLeft <= 5 ? " warning" : "");
+  document.getElementById("timerLabel").textContent = Math.ceil(Math.max(0, timerSecondsLeft)) + "s";
+}
+
+// ─────────────────────────────────────────────
 //  BATTLE
 // ─────────────────────────────────────────────
 function pickQuestion(type) {
@@ -973,44 +1190,105 @@ function startBattle(enemy, enemyIdx) {
   document.getElementById("questionText").textContent = q.q;
   document.getElementById("feedbackText").textContent = "";
   document.getElementById("feedbackText").className = "feedback-text";
-  document.getElementById("hintText").textContent = "";
+  document.getElementById("hintText").textContent = hardMode ? "⚠ No hints in Hard Mode" : "";
 
-  // Multiple choice
+  // Build choices — shuffle in hard mode, tracking the correct answer through the shuffle
   const choicesDiv = document.getElementById("choicesDiv");
   const shortDiv   = document.getElementById("shortAnswerDiv");
   choicesDiv.innerHTML = "";
   shortDiv.style.display = "none";
 
+  // Create indexed array and shuffle in hard mode
+  let choiceList = q.choices.map((text, idx) => ({ text, originalIdx: idx }));
+  if (hardMode) choiceList = shuffle(choiceList);
+
   const keys = ["A","B","C","D"];
-  q.choices.forEach((ch, i) => {
+  choiceList.forEach((ch, displayIdx) => {
     const btn = document.createElement("button");
     btn.className = "choice-btn";
-    btn.innerHTML = `<span class="choice-key">${keys[i]}</span>${ch}`;
-    btn.addEventListener("click", () => submitChoice(i, q, enemy, enemyIdx));
+    btn.innerHTML = `<span class="choice-key">${keys[displayIdx]}</span>${ch.text}`;
+    btn.addEventListener("click", () => submitChoice(ch.originalIdx, q, enemy, enemyIdx));
     choicesDiv.appendChild(btn);
   });
 
   document.getElementById("battleOverlay").classList.add("active");
-
   log(`⚠ ${enemy.name} appeared! [${q.cat_label}]`, "bad");
+
+  // Start timer in hard mode — time out = wrong answer / lose HP
+  startTimer(() => {
+    const btns = document.querySelectorAll(".choice-btn");
+    btns.forEach(b => b.disabled = true);
+    // Highlight correct answer
+    choiceList.forEach((ch, di) => {
+      if (ch.originalIdx === q.a) btns[di].classList.add("correct");
+    });
+    const fb = document.getElementById("feedbackText");
+    fb.textContent = "⏱ TIME'S UP! You lose 2 HP!";
+    fb.className = "feedback-text wrong-fb";
+    player.hp -= 2;
+    streak = 0;
+    log(`⏱ Timed out! HP: ${player.hp}`, "bad");
+    updateHUD();
+    setTimeout(() => {
+      document.getElementById("battleOverlay").classList.remove("active");
+      battleQ = null;
+      draw();
+      if (player.hp <= 0) endGame(false);
+    }, 1600);
+  });
 }
 
 function submitChoice(chosen, q, enemy, enemyIdx) {
+  stopTimer();
   const btns = document.querySelectorAll(".choice-btn");
   btns.forEach(b => b.disabled = true);
 
   const correct = (chosen === q.a);
-  btns[q.a].classList.add("correct");
+
+  // Highlight correct answer among displayed buttons
+  // We need to find which display button corresponds to the correct original index
+  btns.forEach(btn => {
+    // Each btn's click handler was bound to originalIdx; we identify correct btn by re-checking
+  });
+  // Re-find correct button by checking which originalIdx == q.a
+  // Since we can't easily recover that mapping, we mark all wrong + the correct one
+  // Strategy: correct button = the one whose click was submitChoice(q.a, ...)
+  // We encoded this via closure — so highlight the one whose chosen===q.a
+  // We highlight chosen btn and the correct btn (may be same)
+  btns.forEach((btn, di) => {
+    // We stored nothing on the button itself; iterate choiceList is out of scope.
+    // Instead we re-highlight: find correct by text match
+  });
+
+  // Simpler: mark chosen button + find correct by iterating all btns
+  // Correct btn is the one whose text matches q.choices[q.a]
+  const correctText = q.choices[q.a];
+  btns.forEach(btn => {
+    const btnText = btn.textContent.replace(/^[ABCD]/,'').trim();
+    if (btnText === correctText) btn.classList.add("correct");
+  });
   if (!correct) {
-    btns[chosen].classList.add("wrong");
-    document.getElementById("hintText").textContent = "💡 Hint: " + q.hint;
+    btns[Array.from(btns).findIndex(btn => {
+      const t = btn.textContent.replace(/^[ABCD]/,'').trim();
+      return t === q.choices[chosen];
+    })];
+    // Mark the chosen (wrong) button
+    btns.forEach(btn => {
+      const t = btn.textContent.replace(/^[ABCD]/,'').trim();
+      if (t === q.choices[chosen] && !btn.classList.contains("correct")) btn.classList.add("wrong");
+    });
+    if (!hardMode) {
+      document.getElementById("hintText").textContent = "💡 Hint: " + q.hint;
+    } else {
+      document.getElementById("hintText").textContent = "🔥 No hints in Hard Mode!";
+    }
   }
 
   const fb = document.getElementById("feedbackText");
   if (correct) {
     fb.textContent = "✓ CORRECT! Enemy defeated!";
     fb.className = "feedback-text correct-fb";
-    const bonus = q.cat === "boss" ? 30 : q.cat === "math" ? 20 : 15;
+    const bonus = (q.cat === "boss" ? 30 : q.cat === "math" ? 20 : 15) * (hardMode ? 2 : 1);
     score += bonus;
     streak++;
     if (streak >= 3) { score += 10; log("🔥 Streak bonus! +10", "gold"); }
@@ -1026,9 +1304,10 @@ function submitChoice(chosen, q, enemy, enemyIdx) {
       log(`⚔ ${enemies.length} enemies remaining.`, "");
     }
   } else {
-    fb.textContent = "✗ WRONG! You lose 1 HP.";
+    const dmg = hardMode ? 2 : 1;
+    fb.textContent = `✗ WRONG! You lose ${dmg} HP.`;
     fb.className = "feedback-text wrong-fb";
-    player.hp--;
+    player.hp -= dmg;
     streak = 0;
     log(`✘ Wrong answer. HP: ${player.hp}`, "bad");
   }
@@ -1050,6 +1329,7 @@ function submitChoice(chosen, q, enemy, enemyIdx) {
 // ─────────────────────────────────────────────
 function endGame(won) {
   gameActive = false;
+  stopTimer();
   document.getElementById("battleOverlay").classList.remove("active");
 
   const screen = document.getElementById("endScreen");
@@ -1059,8 +1339,10 @@ function endGame(won) {
   title.textContent = won ? "🏆 TREASURE FOUND!" : "💀 GAME OVER";
   title.className   = "end-title " + (won ? "win" : "lose");
 
+  const modeLabel = hardMode ? " (HARD MODE 🔥)" : " (Normal)";
   stats.innerHTML =
-    `Score: ${score}<br>` +
+    `Mode: ${hardMode ? "⚠ HARD" : "🛡 NORMAL"}<br>` +
+    `Score: ${score}${modeLabel}<br>` +
     `Enemies Defeated: ${kills}<br>` +
     `Best Streak: ${streak}<br>` +
     `HP Remaining: ${player.hp}`;
@@ -1097,9 +1379,25 @@ document.querySelectorAll(".ctrl-btn").forEach(btn => {
 });
 
 // ─────────────────────────────────────────────
+//  MODE SELECT
+// ─────────────────────────────────────────────
+function showModeSelect() {
+  document.getElementById("endScreen").classList.remove("active");
+  document.getElementById("modeScreen").classList.remove("hidden");
+}
+
+function startMode(mode) {
+  currentMode = mode;
+  hardMode = (mode === 'hard');
+  document.getElementById("modeScreen").classList.add("hidden");
+  initGame(mode);
+}
+
+// ─────────────────────────────────────────────
 //  START
-// ─────────────────────────────────────────────-
-initGame();
+// ─────────────────────────────────────────────
+// Show mode select on load (don't auto-start)
+
 </script>
 </body>
 </html>
