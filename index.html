@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EQAO Quest</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a1a;
+      --panel: #0f0f2a;
+      --border: #2a2a5a;
+      --accent: #00e5ff;
+      --accent2: #ff6b35;
+      --gold: #ffd700;
+      --green: #39ff14;
+      --red: #ff3a3a;
+      --purple: #b44fff;
+      --text: #e0e0ff;
+      --dimtext: #7777aa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Orbitron', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    /* Starfield background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 45% 50%, rgba(255,255,255,0.2) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65% 35%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.4) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 3vw, 22px);
+      color: var(--accent);
+      text-shadow: 0 0 20px var(--accent), 0 0 40px rgba(0,229,255,0.3);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .subtitle {
+      font-size: 9px;
+      color: var(--dimtext);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .game-wrapper {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ─── Left HUD panel ─── */
+    .hud-panel {
+      width: 180px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .hud-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 8px;
+      color: var(--dimtext);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 13px;
+      color: var(--gold);
+    }
+
+    .hp-bar-outer {
+      background: #1a1a3a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      height: 12px;
+      overflow: hidden;
+    }
+
+    .hp-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #39ff14, #aaff00);
+      border-radius: 4px;
+      transition: width 0.4s ease, background 0.4s;
+    }
+
+    .hp-bar-inner.low { background: linear-gradient(90deg, #ff3a3a, #ff8800); }
+
+    /* Legend */
+    .legend { display: flex; flex-direction: column; gap: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 8px; color: var(--dimtext); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+    /* Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 28px);
+      grid-template-rows: repeat(3, 28px);
+      gap: 3px;
+      justify-content: center;
+    }
+    .ctrl-btn {
+      background: #1a1a3a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.1s;
+      touch-action: manipulation;
+    }
+    .ctrl-btn:active, .ctrl-btn.pressed {
+      background: var(--accent);
+      transform: scale(0.9);
+    }
+    .ctrl-blank { visibility: hidden; }
+
+    /* ─── Canvas area ─── */
+    .canvas-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    canvas {
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(0,229,255,0.15), inset 0 0 20px rgba(0,0,20,0.5);
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .map-label {
+      font-size: 8px;
+      color: var(--dimtext);
+      letter-spacing: 2px;
+    }
+
+    /* ─── Message log ─── */
+    .log-panel {
+      width: 500px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      max-height: 90px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .log-entry {
+      font-size: 8px;
+      color: var(--dimtext);
+      font-family: 'Press Start 2P', monospace;
+      animation: fadeIn 0.3s ease;
+    }
+    .log-entry.highlight { color: var(--accent); }
+    .log-entry.bad { color: var(--red); }
+    .log-entry.good { color: var(--green); }
+    .log-entry.gold { color: var(--gold); }
+
+    /* ─── Battle overlay ─── */
+    #battleOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,10,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #battleOverlay.active { display: flex; }
+
+    .battle-box {
+      background: var(--panel);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 0 60px rgba(0,229,255,0.2);
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+
+    .enemy-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .enemy-sprite {
+      font-size: 42px;
+      filter: drop-shadow(0 0 10px var(--red));
+      animation: enemyPulse 1.2s infinite alternate;
+    }
+    @keyframes enemyPulse {
+      from { filter: drop-shadow(0 0 6px var(--red)); transform: scale(1); }
+      to   { filter: drop-shadow(0 0 18px var(--red)); transform: scale(1.05); }
+    }
+
+    .enemy-info h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+    .enemy-info p {
+      font-size: 9px;
+      color: var(--dimtext);
+      letter-spacing: 1px;
+    }
+
+    .category-badge {
+      display: inline-block;
+      font-size: 8px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .cat-math    { background: rgba(180,79,255,0.2); color: var(--purple); border: 1px solid var(--purple); }
+    .cat-english { background: rgba(255,107,53,0.2); color: var(--accent2); border: 1px solid var(--accent2); }
+    .cat-reading { background: rgba(0,229,255,0.15); color: var(--accent); border: 1px solid var(--accent); }
+
+    .question-text {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 18px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 400;
+    }
+
+    /* Multiple choice */
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .choice-btn {
+      background: #12122e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(0,229,255,0.07);
+      transform: translateX(4px);
+    }
+
+    .choice-btn.correct  { border-color: var(--green);  background: rgba(57,255,20,0.12);  color: var(--green);  }
+    .choice-btn.wrong    { border-color: var(--red);    background: rgba(255,58,58,0.12);   color: var(--red);    }
+    .choice-btn:disabled { cursor: default; }
+
+    .choice-key {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      background: var(--border);
+      border-radius: 3px;
+      padding: 2px 5px;
+      color: var(--dimtext);
+      flex-shrink: 0;
+    }
+
+    /* Short answer */
+    .answer-area { display: flex; gap: 8px; margin-bottom: 14px; }
+    .answer-input {
+      flex: 1;
+      background: #12122e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .answer-input:focus { border-color: var(--accent); }
+
+    .submit-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .submit-btn:hover  { opacity: 0.85; }
+    .submit-btn:active { transform: scale(0.95); }
+
+    .feedback-text {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .feedback-text.correct-fb { color: var(--green);  background: rgba(57,255,20,0.08); }
+    .feedback-text.wrong-fb   { color: var(--red);    background: rgba(255,58,58,0.08); }
+
+    .hint-text {
+      font-size: 9px;
+      color: var(--dimtext);
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Win / game over */
+    .end-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,10,0.94);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      padding: 20px;
+    }
+    .end-screen.active { display: flex; }
+
+    .end-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(16px, 5vw, 30px);
+      text-align: center;
+      animation: titleGlow 1.5s infinite alternate;
+    }
+    .end-title.win  { color: var(--gold); }
+    .end-title.lose { color: var(--red); }
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 10px currentColor; }
+      to   { text-shadow: 0 0 40px currentColor, 0 0 80px currentColor; }
+    }
+
+    .end-stats {
+      font-size: 10px;
+      color: var(--dimtext);
+      text-align: center;
+      line-height: 2;
+    }
+
+    .restart-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 28px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .restart-btn:hover { opacity: 0.8; }
+
+    /* Scrollbar */
+    .log-panel::-webkit-scrollbar { width: 4px; }
+    .log-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<h1>⚔ EQAO QUEST</h1>
+<p class="subtitle">Grade 6 Math & English — Defeat enemies to reach the treasure!</p>
+
+<div class="game-wrapper">
+
+  <!-- Left HUD -->
+  <div class="hud-panel">
+    <div class="hud-title">◈ HERO</div>
+
+    <div class="stat-row">
+      <span class="stat-label">❤ Health</span>
+      <div class="hp-bar-outer"><div class="hp-bar-inner" id="hpBar" style="width:100%"></div></div>
+      <span class="stat-value" id="hpVal">5 / 5</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-label">⭐ Score</span>
+      <span class="stat-value" id="scoreVal">0</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-label">💀 Defeated</span>
+      <span class="stat-value" id="killVal">0</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-label">🏅 Streak</span>
+      <span class="stat-value" id="streakVal">0</span>
+    </div>
+
+    <div class="hud-title" style="margin-top:4px">◈ LEGEND</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00e5ff"></div>Hero</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div>Treasure</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff3a3a"></div>Enemy (Math)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>Enemy (English)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#b44fff"></div>Boss</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#39ff14"></div>Health Pack</div>
+    </div>
+
+    <div class="hud-title" style="margin-top:4px">◈ MOVE</div>
+    <div class="controls-grid">
+      <div class="ctrl-blank"></div>
+      <div class="ctrl-btn" id="btnUp"    data-key="ArrowUp">▲</div>
+      <div class="ctrl-blank"></div>
+      <div class="ctrl-btn" id="btnLeft"  data-key="ArrowLeft">◀</div>
+      <div class="ctrl-btn" id="btnDown"  data-key="ArrowDown">▼</div>
+      <div class="ctrl-btn" id="btnRight" data-key="ArrowRight">▶</div>
+    </div>
+  </div>
+
+  <!-- Canvas + log -->
+  <div class="canvas-area">
+    <canvas id="gameCanvas" width="500" height="400"></canvas>
+    <span class="map-label">ARROW KEYS OR BUTTONS TO MOVE</span>
+    <div class="log-panel" id="logPanel"></div>
+  </div>
+
+</div>
+
+<!-- Battle Overlay -->
+<div id="battleOverlay">
+  <div class="battle-box">
+    <div class="enemy-header">
+      <div class="enemy-sprite" id="enemySprite">👹</div>
+      <div class="enemy-info">
+        <h2 id="enemyName">ENEMY APPEARS!</h2>
+        <p id="enemyDesc">Answer correctly to defeat it.</p>
+      </div>
+    </div>
+    <div id="categoryBadge" class="category-badge cat-math">MATH</div>
+    <div class="question-text" id="questionText"></div>
+    <div id="choicesDiv" class="choices"></div>
+    <div id="shortAnswerDiv" class="answer-area" style="display:none">
+      <input class="answer-input" id="answerInput" type="text" placeholder="Your answer..." autocomplete="off">
+      <button class="submit-btn" id="submitBtn">OK</button>
+    </div>
+    <div class="feedback-text" id="feedbackText"></div>
+    <div class="hint-text" id="hintText"></div>
+  </div>
+</div>
+
+<!-- End Screen -->
+<div class="end-screen" id="endScreen">
+  <div class="end-title" id="endTitle">GAME OVER</div>
+  <div class="end-stats" id="endStats"></div>
+  <button class="restart-btn" onclick="initGame()">▶ PLAY AGAIN</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  QUESTION BANK  (Grade 6 EQAO aligned)
+// ─────────────────────────────────────────────
+const QUESTIONS = [
+  // ── NUMBER SENSE ──────────────────────────
+  { cat:"math", cat_label:"NUMBER SENSE", q:"What is the value of the digit 7 in the number 4,738,051?",
+    choices:["7 hundreds","7 thousands","70 thousands","700 thousands"], a:3,
+    hint:"Place values from right: ones, tens, hundreds, thousands, ten-thousands, hundred-thousands…" },
+
+  { cat:"math", cat_label:"NUMBER SENSE", q:"Which fraction is equivalent to 0.75?",
+    choices:["3/5","3/4","7/5","7/10"], a:1,
+    hint:"0.75 = 75/100. Simplify by dividing numerator and denominator by 25." },
+
+  { cat:"math", cat_label:"NUMBER SENSE", q:"Order from least to greatest: 2/3, 0.7, 3/4, 65%",
+    choices:["2/3, 65%, 0.7, 3/4","65%, 2/3, 0.7, 3/4","65%, 0.7, 2/3, 3/4","2/3, 0.7, 65%, 3/4"], a:1,
+    hint:"Convert all to decimals: 2/3≈0.667, 0.7, 3/4=0.75, 65%=0.65" },
+
+  { cat:"math", cat_label:"NUMBER SENSE", q:"What is 40% of 250?",
+    choices:["80","90","100","110"], a:2,
+    hint:"40% = 40/100. Multiply: 40 × 250 ÷ 100 = ?" },
+
+  { cat:"math", cat_label:"NUMBER SENSE", q:"A store discounts a $60 jacket by 30%. What is the sale price?",
+    choices:["$18","$30","$42","$48"], a:2,
+    hint:"Find 30% of $60, then subtract from the original price." },
+
+  // ── MEASUREMENT ───────────────────────────
+  { cat:"math", cat_label:"MEASUREMENT", q:"A rectangle has a length of 12 cm and a width of 7 cm. What is its perimeter?",
+    choices:["38 cm","42 cm","84 cm","19 cm"], a:0,
+    hint:"Perimeter = 2 × (length + width)" },
+
+  { cat:"math", cat_label:"MEASUREMENT", q:"What is the area of a triangle with a base of 10 cm and a height of 6 cm?",
+    choices:["60 cm²","30 cm²","16 cm²","50 cm²"], a:1,
+    hint:"Area of triangle = ½ × base × height" },
+
+  { cat:"math", cat_label:"MEASUREMENT", q:"A rectangular pool is 8 m long, 5 m wide, and 2 m deep. What is its volume?",
+    choices:["80 m³","40 m³","100 m³","56 m³"], a:0,
+    hint:"Volume = length × width × height" },
+
+  { cat:"math", cat_label:"MEASUREMENT", q:"How many centimetres are in 3.5 metres?",
+    choices:["305 cm","350 cm","35 cm","3500 cm"], a:1,
+    hint:"1 metre = 100 centimetres" },
+
+  { cat:"math", cat_label:"MEASUREMENT", q:"A circle has a radius of 5 cm. Using π ≈ 3.14, what is its area?",
+    choices:["31.4 cm²","78.5 cm²","15.7 cm²","157 cm²"], a:1,
+    hint:"Area = π × r². Substitute r = 5." },
+
+  // ── PATTERNING & ALGEBRA ──────────────────
+  { cat:"math", cat_label:"PATTERNING & ALGEBRA", q:"What is the next term in the pattern: 3, 7, 15, 31, ___?",
+    choices:["47","55","63","67"], a:2,
+    hint:"Look at what operation connects each term: ×2 + ? each time." },
+
+  { cat:"math", cat_label:"PATTERNING & ALGEBRA", q:"Solve for n: 4n − 5 = 19",
+    choices:["n = 3","n = 6","n = 7","n = 5"], a:1,
+    hint:"Add 5 to both sides first, then divide by 4." },
+
+  { cat:"math", cat_label:"PATTERNING & ALGEBRA", q:"Which expression represents 'five more than three times a number n'?",
+    choices:["3 + 5n","3n − 5","3n + 5","5n + 3"], a:2,
+    hint:"'Three times a number' → 3n. 'Five more than' → add 5." },
+
+  { cat:"math", cat_label:"PATTERNING & ALGEBRA", q:"A pattern rule is: start at 2, multiply by 3 each time. What is the 5th term?",
+    choices:["162","54","486","243"], a:0,
+    hint:"Term 1=2, Term 2=6, Term 3=18, Term 4=54, Term 5=?" },
+
+  // ── DATA MANAGEMENT ───────────────────────
+  { cat:"math", cat_label:"DATA MANAGEMENT", q:"The mean of five test scores is 72. Four of the scores are 65, 70, 80, 75. What is the fifth score?",
+    choices:["68","70","74","69"], a:1,
+    hint:"Mean × 5 = total. Find the total, then subtract the four known scores." },
+
+  { cat:"math", cat_label:"DATA MANAGEMENT", q:"What is the median of: 14, 9, 22, 7, 18, 11?",
+    choices:["12.5","11","14","13.5"], a:0,
+    hint:"Sort the values first, then find the middle. With 6 values, average the two middle ones." },
+
+  { cat:"math", cat_label:"DATA MANAGEMENT", q:"A bag has 3 red, 5 blue, and 2 green marbles. If you pick one randomly, what is the probability of blue?",
+    choices:["1/5","1/2","3/10","2/5"], a:1,
+    hint:"Probability = favourable outcomes ÷ total outcomes. Total = 3+5+2." },
+
+  // ── GEOMETRY ──────────────────────────────
+  { cat:"math", cat_label:"GEOMETRY", q:"How many lines of symmetry does a regular hexagon have?",
+    choices:["3","4","5","6"], a:3,
+    hint:"A regular hexagon has as many lines of symmetry as it has sides." },
+
+  { cat:"math", cat_label:"GEOMETRY", q:"Point A is at (2, 3). If it is translated 4 units right and 2 units down, what are the new coordinates?",
+    choices:["(6, 1)","(6, 5)","(−2, 1)","(2, 5)"], a:0,
+    hint:"Right means add to x; down means subtract from y." },
+
+  { cat:"math", cat_label:"GEOMETRY", q:"What is the sum of interior angles in a triangle?",
+    choices:["90°","180°","270°","360°"], a:1,
+    hint:"This is a fundamental geometry fact worth memorizing!" },
+
+  // ── ENGLISH — READING ─────────────────────
+  { cat:"english", cat_label:"READING", q:"In a story, the protagonist's internal struggle is best described as:",
+    choices:["Person vs. Person","Person vs. Nature","Person vs. Self","Person vs. Society"], a:2,
+    hint:"'Internal' means inside the character's own mind." },
+
+  { cat:"english", cat_label:"READING", q:"A student reads: 'The old lighthouse stood like a tired soldier on the cliff.' This is an example of:",
+    choices:["Metaphor","Alliteration","Simile","Personification"], a:2,
+    hint:"Look for the word 'like' or 'as' to identify a simile." },
+
+  { cat:"english", cat_label:"READING", q:"Which text feature would BEST help you find where a topic is discussed in a non-fiction book?",
+    choices:["Glossary","Index","Caption","Diagram"], a:1,
+    hint:"This feature lists topics alphabetically with page numbers." },
+
+  { cat:"english", cat_label:"READING", q:"The author's purpose for writing a persuasive letter to the city council would be to:",
+    choices:["Entertain readers with a funny story","Explain how city councils work","Convince the council to take action","Describe what a council meeting looks like"], a:2,
+    hint:"Persuasive writing always tries to change someone's mind or get them to act." },
+
+  { cat:"english", cat_label:"READING", q:"In a paragraph, the topic sentence is usually found:",
+    choices:["In the middle of the paragraph","At the end of the paragraph","At the beginning of the paragraph","In the title of the book"], a:2,
+    hint:"The topic sentence introduces the main idea of the paragraph." },
+
+  // ── ENGLISH — LANGUAGE ────────────────────
+  { cat:"english", cat_label:"LANGUAGE", q:"Which sentence is written in the PASSIVE voice?",
+    choices:["The dog chased the cat.","Maria solved the problem.","The trophy was won by our team.","He reads every night."], a:2,
+    hint:"In passive voice, the subject receives the action rather than doing it." },
+
+  { cat:"english", cat_label:"LANGUAGE", q:"Identify the COMPOUND sentence:",
+    choices:["Although it rained, we played outside.","The cat sat on the mat.","I wanted to go, but I was tired.","Running fast, she won the race."], a:2,
+    hint:"A compound sentence joins two independent clauses with a coordinating conjunction (for, and, nor, but, or, yet, so)." },
+
+  { cat:"english", cat_label:"LANGUAGE", q:"Choose the correct homophone: 'The knight put on his suit of ___.'",
+    choices:["mail","male","mael","maille"], a:0,
+    hint:"Knights wore armour made of interlocked metal rings called chain ___." },
+
+  { cat:"english", cat_label:"LANGUAGE", q:"Which word is a SYNONYM for 'benevolent'?",
+    choices:["Cruel","Generous","Timid","Curious"], a:1,
+    hint:"'Benevolent' comes from Latin meaning 'well-wishing'." },
+
+  { cat:"english", cat_label:"LANGUAGE", q:"Which sentence uses an apostrophe CORRECTLY?",
+    choices:["The dog's bowl is empty.","The dog's are hungry.","The dogs bowl's are empty.","Its a sunny day."], a:0,
+    hint:"Apostrophes show possession (dog's bowl) or contractions (it's = it is)." },
+
+  // ── BOSS QUESTIONS (hard) ─────────────────
+  { cat:"boss", cat_label:"BOSS CHALLENGE", q:"A store sells two types of juice. Orange juice costs $1.20 per 250 mL, and apple juice costs $1.80 per 400 mL. Which is the better deal per mL?",
+    choices:["Orange juice ($0.0048/mL)","Apple juice ($0.0045/mL)","They cost the same","Not enough information"], a:1,
+    hint:"Divide the price by the volume to find the unit rate." },
+
+  { cat:"boss", cat_label:"BOSS CHALLENGE", q:"If the pattern continues: 1, 4, 9, 16, 25, ___, what is the next term AND what type of numbers are these?",
+    choices:["36 — Prime numbers","36 — Perfect squares","34 — Even numbers","49 — Fibonacci numbers"], a:1,
+    hint:"1²=1, 2²=4, 3²=9… What does 6² equal?" },
+
+  { cat:"boss", cat_label:"BOSS CHALLENGE", q:"Which change in a story marks the CLIMAX?",
+    choices:["The setting is described at the start","Background information about characters is shared","The main character faces the most intense moment of conflict","The conflict is resolved and the story wraps up"], a:2,
+    hint:"The climax is the turning point — the moment of highest tension." },
+];
+
+// ─────────────────────────────────────────────
+//  GAME STATE
+// ─────────────────────────────────────────────
+const TILE = 20;
+const COLS = 500 / TILE;  // 25
+const ROWS = 400 / TILE;  // 20
+const MAX_HP = 5;
+
+let player, enemies, healthPacks, treasure, score, streak, kills, gameActive, battleQ, battleCallback;
+
+const canvas  = document.getElementById("gameCanvas");
+const ctx     = canvas.getContext("2d");
+
+function initGame() {
+  document.getElementById("endScreen").classList.remove("active");
+
+  player = { x:1, y:1, hp: MAX_HP };
+
+  enemies = [
+    { x:12, y:3,  type:"math",    sprite:"🔴", name:"Number Goblin" },
+    { x:6,  y:10, type:"math",    sprite:"🔴", name:"Fraction Troll" },
+    { x:18, y:7,  type:"english", sprite:"🟠", name:"Grammar Beast" },
+    { x:22, y:15, type:"english", sprite:"🟠", name:"Vocab Witch" },
+    { x:10, y:17, type:"math",    sprite:"🔴", name:"Algebra Ogre" },
+    { x:20, y:3,  type:"boss",    sprite:"💀", name:"BOSS: Sphinx" },
+  ];
+
+  healthPacks = [
+    { x:5,  y:5  },
+    { x:15, y:12 },
+    { x:8,  y:18 },
+  ];
+
+  treasure = { x:23, y:18 };
+  score    = 0;
+  streak   = 0;
+  kills    = 0;
+  gameActive = true;
+  battleQ = null;
+  battleCallback = null;
+
+  updateHUD();
+  draw();
+  clearLog();
+  log("▶ Quest begins! Find the treasure!", "highlight");
+  log("Move with arrow keys or the on-screen buttons.", "");
+}
+
+// ─────────────────────────────────────────────
+//  HUD
+// ─────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById("hpVal").textContent    = player.hp + " / " + MAX_HP;
+  document.getElementById("scoreVal").textContent = score;
+  document.getElementById("killVal").textContent  = kills;
+  document.getElementById("streakVal").textContent= streak;
+
+  const pct = (player.hp / MAX_HP * 100) + "%";
+  const bar = document.getElementById("hpBar");
+  bar.style.width = pct;
+  bar.className   = "hp-bar-inner" + (player.hp <= 2 ? " low" : "");
+}
+
+// ─────────────────────────────────────────────
+//  LOG
+// ─────────────────────────────────────────────
+function log(msg, cls="") {
+  const panel = document.getElementById("logPanel");
+  const el = document.createElement("div");
+  el.className = "log-entry " + cls;
+  el.textContent = "▸ " + msg;
+  panel.appendChild(el);
+  panel.scrollTop = panel.scrollHeight;
+  // Keep only last 30
+  while (panel.children.length > 30) panel.removeChild(panel.firstChild);
+}
+function clearLog() {
+  document.getElementById("logPanel").innerHTML = "";
+}
+
+// ─────────────────────────────────────────────
+//  DRAW
+// ─────────────────────────────────────────────
+const COLOURS = {
+  grass1: "#0a1a0a",
+  grass2: "#0c1e0c",
+  path:   "#1a1a2a",
+};
+
+// Pre-generate a simple tile map for atmosphere
+const TILE_MAP = [];
+for (let r=0; r<ROWS; r++) {
+  TILE_MAP[r] = [];
+  for (let c=0; c<COLS; c++) {
+    TILE_MAP[r][c] = ((r+c) % 2 === 0) ? 0 : 1;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 500, 400);
+
+  // Grid
+  for (let r=0; r<ROWS; r++) {
+    for (let c=0; c<COLS; c++) {
+      ctx.fillStyle = TILE_MAP[r][c] ? "#0b1a14" : "#091612";
+      ctx.fillRect(c*TILE, r*TILE, TILE, TILE);
+    }
+  }
+  // Grid lines
+  ctx.strokeStyle = "rgba(0,80,60,0.3)";
+  ctx.lineWidth = 0.5;
+  for (let r=0; r<=ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*TILE); ctx.lineTo(500, r*TILE); ctx.stroke();
+  }
+  for (let c=0; c<=COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*TILE, 0); ctx.lineTo(c*TILE, 400); ctx.stroke();
+  }
+
+  // Health packs
+  healthPacks.forEach(hp => {
+    ctx.fillStyle = "#39ff14";
+    ctx.shadowColor = "#39ff14";
+    ctx.shadowBlur = 8;
+    ctx.fillRect(hp.x*TILE+3, hp.y*TILE+3, TILE-6, TILE-6);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 10px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("+", hp.x*TILE+TILE/2, hp.y*TILE+TILE/2+4);
+  });
+
+  // Treasure
+  ctx.fillStyle = "#ffd700";
+  ctx.shadowColor = "#ffd700";
+  ctx.shadowBlur = 16;
+  ctx.fillRect(treasure.x*TILE+2, treasure.y*TILE+2, TILE-4, TILE-4);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#b8860b";
+  ctx.font = "10px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("★", treasure.x*TILE+TILE/2, treasure.y*TILE+TILE/2+3);
+
+  // Enemies
+  enemies.forEach(e => {
+    const col = e.type === "boss" ? "#b44fff" : e.type === "math" ? "#ff3a3a" : "#ff6b35";
+    ctx.fillStyle = col;
+    ctx.shadowColor = col;
+    ctx.shadowBlur = 10;
+    ctx.fillRect(e.x*TILE+1, e.y*TILE+1, TILE-2, TILE-2);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff";
+    ctx.font = "9px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(e.type==="boss"?"B":"!", e.x*TILE+TILE/2, e.y*TILE+TILE/2+3);
+  });
+
+  // Player
+  ctx.fillStyle = "#00e5ff";
+  ctx.shadowColor = "#00e5ff";
+  ctx.shadowBlur = 14;
+  ctx.fillRect(player.x*TILE+2, player.y*TILE+2, TILE-4, TILE-4);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#003040";
+  ctx.font = "bold 9px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("P", player.x*TILE+TILE/2, player.y*TILE+TILE/2+3);
+}
+
+// ─────────────────────────────────────────────
+//  MOVEMENT & COLLISION
+// ─────────────────────────────────────────────
+function move(dir) {
+  if (!gameActive || battleQ !== null) return;
+
+  let nx = player.x, ny = player.y;
+  if (dir === "ArrowUp")    ny--;
+  if (dir === "ArrowDown")  ny++;
+  if (dir === "ArrowLeft")  nx--;
+  if (dir === "ArrowRight") nx++;
+
+  // Bounds
+  if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+
+  player.x = nx; player.y = ny;
+  draw();
+
+  // Check health pack
+  const hpIdx = healthPacks.findIndex(h => h.x === player.x && h.y === player.y);
+  if (hpIdx !== -1) {
+    healthPacks.splice(hpIdx, 1);
+    if (player.hp < MAX_HP) {
+      player.hp++;
+      log("❤ Picked up a Health Pack! HP: " + player.hp, "good");
+    } else {
+      score += 10;
+      log("❤ Health Pack (already full) → +10 score", "good");
+    }
+    updateHUD(); draw();
+  }
+
+  // Check enemy
+  const eIdx = enemies.findIndex(e => e.x === player.x && e.y === player.y);
+  if (eIdx !== -1) {
+    startBattle(enemies[eIdx], eIdx);
+    return;
+  }
+
+  // Check treasure
+  if (player.x === treasure.x && player.y === treasure.y) {
+    endGame(true);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  BATTLE
+// ─────────────────────────────────────────────
+function pickQuestion(type) {
+  const pool = type === "boss"
+    ? QUESTIONS.filter(q => q.cat === "boss")
+    : QUESTIONS.filter(q => q.cat === type);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function startBattle(enemy, enemyIdx) {
+  const q = pickQuestion(enemy.type);
+  battleQ = q;
+
+  // Set up overlay
+  const spriteMap = { math: "👹", english: "👾", boss: "💀" };
+  document.getElementById("enemySprite").textContent = spriteMap[enemy.type] || "👹";
+  document.getElementById("enemyName").textContent = enemy.name.toUpperCase();
+  document.getElementById("enemyDesc").textContent =
+    enemy.type === "boss" ? "⚠ BOSS! Answer correctly to pass!" : "Answer to defeat the enemy!";
+
+  const badge = document.getElementById("categoryBadge");
+  badge.textContent = q.cat_label;
+  badge.className = "category-badge " + (q.cat==="boss" ? "cat-reading" : q.cat==="math" ? "cat-math" : "cat-english");
+
+  document.getElementById("questionText").textContent = q.q;
+  document.getElementById("feedbackText").textContent = "";
+  document.getElementById("feedbackText").className = "feedback-text";
+  document.getElementById("hintText").textContent = "";
+
+  // Multiple choice
+  const choicesDiv = document.getElementById("choicesDiv");
+  const shortDiv   = document.getElementById("shortAnswerDiv");
+  choicesDiv.innerHTML = "";
+  shortDiv.style.display = "none";
+
+  const keys = ["A","B","C","D"];
+  q.choices.forEach((ch, i) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.innerHTML = `<span class="choice-key">${keys[i]}</span>${ch}`;
+    btn.addEventListener("click", () => submitChoice(i, q, enemy, enemyIdx));
+    choicesDiv.appendChild(btn);
+  });
+
+  document.getElementById("battleOverlay").classList.add("active");
+
+  log(`⚠ ${enemy.name} appeared! [${q.cat_label}]`, "bad");
+}
+
+function submitChoice(chosen, q, enemy, enemyIdx) {
+  const btns = document.querySelectorAll(".choice-btn");
+  btns.forEach(b => b.disabled = true);
+
+  const correct = (chosen === q.a);
+  btns[q.a].classList.add("correct");
+  if (!correct) {
+    btns[chosen].classList.add("wrong");
+    document.getElementById("hintText").textContent = "💡 Hint: " + q.hint;
+  }
+
+  const fb = document.getElementById("feedbackText");
+  if (correct) {
+    fb.textContent = "✓ CORRECT! Enemy defeated!";
+    fb.className = "feedback-text correct-fb";
+    const bonus = q.cat === "boss" ? 30 : q.cat === "math" ? 20 : 15;
+    score += bonus;
+    streak++;
+    if (streak >= 3) { score += 10; log("🔥 Streak bonus! +10", "gold"); }
+    kills++;
+    log(`✔ Answered correctly! [+${bonus} pts]`, "good");
+    enemies.splice(enemyIdx, 1);
+  } else {
+    fb.textContent = "✗ WRONG! You lose 1 HP.";
+    fb.className = "feedback-text wrong-fb";
+    player.hp--;
+    streak = 0;
+    log(`✘ Wrong answer. HP: ${player.hp}`, "bad");
+  }
+
+  updateHUD();
+
+  setTimeout(() => {
+    document.getElementById("battleOverlay").classList.remove("active");
+    battleQ = null;
+    draw();
+    if (player.hp <= 0) {
+      endGame(false);
+    }
+  }, 1600);
+}
+
+// ─────────────────────────────────────────────
+//  END GAME
+// ─────────────────────────────────────────────
+function endGame(won) {
+  gameActive = false;
+  document.getElementById("battleOverlay").classList.remove("active");
+
+  const screen = document.getElementById("endScreen");
+  const title  = document.getElementById("endTitle");
+  const stats  = document.getElementById("endStats");
+
+  title.textContent = won ? "🏆 TREASURE FOUND!" : "💀 GAME OVER";
+  title.className   = "end-title " + (won ? "win" : "lose");
+
+  stats.innerHTML =
+    `Score: ${score}<br>` +
+    `Enemies Defeated: ${kills}<br>` +
+    `Best Streak: ${streak}<br>` +
+    `HP Remaining: ${player.hp}`;
+
+  screen.classList.add("active");
+}
+
+// ─────────────────────────────────────────────
+//  KEYBOARD INPUT
+// ─────────────────────────────────────────────
+document.addEventListener("keydown", (e) => {
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) {
+    e.preventDefault();
+    move(e.key);
+  }
+  // A/B/C/D for battle choices
+  if (battleQ && document.getElementById("battleOverlay").classList.contains("active")) {
+    const map = { a:0, b:1, c:2, d:3, "1":0, "2":1, "3":2, "4":3 };
+    const idx = map[e.key.toLowerCase()];
+    if (idx !== undefined) {
+      const btns = document.querySelectorAll(".choice-btn");
+      if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+    }
+  }
+});
+
+// ─────────────────────────────────────────────
+//  ON-SCREEN BUTTONS
+// ─────────────────────────────────────────────
+document.querySelectorAll(".ctrl-btn").forEach(btn => {
+  const fire = () => { move(btn.dataset.key); };
+  btn.addEventListener("mousedown", fire);
+  btn.addEventListener("touchstart", (e) => { e.preventDefault(); fire(); }, { passive: false });
+});
+
+// ─────────────────────────────────────────────
+//  START
+// ─────────────────────────────────────────────
+initGame();
+</script>
+</body>
+</html>
