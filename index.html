@@ -456,7 +456,7 @@
 <body>
 
 <h1>⚔ EQAO QUEST</h1>
-<p class="subtitle">Grade 6 Math & English — Defeat enemies to reach the treasure!</p>
+<p class="subtitle">Grade 6 Math & English — Defeat ALL enemies to unlock the treasure!</p>
 
 <div class="game-wrapper">
 
@@ -481,6 +481,11 @@
     </div>
 
     <div class="stat-row">
+      <span class="stat-label">⚠ Remaining</span>
+      <span class="stat-value" id="remainVal" style="color:var(--red)">19</span>
+    </div>
+
+    <div class="stat-row">
       <span class="stat-label">🏅 Streak</span>
       <span class="stat-value" id="streakVal">0</span>
     </div>
@@ -488,7 +493,8 @@
     <div class="hud-title" style="margin-top:4px">◈ LEGEND</div>
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:#00e5ff"></div>Hero</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div>Treasure</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div>Treasure (unlocked)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#333355;border:1px solid #555577"></div>Treasure (locked)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#ff3a3a"></div>Enemy (Math)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>Enemy (English)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#b44fff"></div>Boss</div>
@@ -698,7 +704,7 @@ const COLS = 500 / TILE;  // 25
 const ROWS = 400 / TILE;  // 20
 const MAX_HP = 5;
 
-let player, enemies, healthPacks, treasure, score, streak, kills, gameActive, battleQ, battleCallback;
+let player, enemies, healthPacks, treasure, score, streak, kills, gameActive, battleQ, battleCallback, treasureUnlocked;
 
 const canvas  = document.getElementById("gameCanvas");
 const ctx     = canvas.getContext("2d");
@@ -709,21 +715,39 @@ function initGame() {
   player = { x:1, y:1, hp: MAX_HP };
 
   enemies = [
-    { x:12, y:3,  type:"math",    sprite:"🔴", name:"Number Goblin" },
-    { x:6,  y:10, type:"math",    sprite:"🔴", name:"Fraction Troll" },
-    { x:18, y:7,  type:"english", sprite:"🟠", name:"Grammar Beast" },
-    { x:22, y:15, type:"english", sprite:"🟠", name:"Vocab Witch" },
-    { x:10, y:17, type:"math",    sprite:"🔴", name:"Algebra Ogre" },
-    { x:20, y:3,  type:"boss",    sprite:"💀", name:"BOSS: Sphinx" },
+    // Math enemies
+    { x:12, y:3,  type:"math",    name:"Number Goblin" },
+    { x:6,  y:10, type:"math",    name:"Fraction Troll" },
+    { x:10, y:17, type:"math",    name:"Algebra Ogre" },
+    { x:3,  y:14, type:"math",    name:"Percent Phantom" },
+    { x:16, y:1,  type:"math",    name:"Geometry Ghoul" },
+    { x:22, y:9,  type:"math",    name:"Data Demon" },
+    { x:8,  y:6,  type:"math",    name:"Decimal Wraith" },
+    { x:19, y:17, type:"math",    name:"Pattern Pixie" },
+    { x:14, y:13, type:"math",    name:"Volume Viper" },
+    // English enemies
+    { x:18, y:7,  type:"english", name:"Grammar Beast" },
+    { x:22, y:15, type:"english", name:"Vocab Witch" },
+    { x:4,  y:18, type:"english", name:"Punctuation Pest" },
+    { x:9,  y:2,  type:"english", name:"Synonym Specter" },
+    { x:20, y:12, type:"english", name:"Clause Creature" },
+    { x:13, y:8,  type:"english", name:"Figurative Fiend" },
+    { x:2,  y:8,  type:"english", name:"Voice Vampire" },
+    // Bosses
+    { x:20, y:3,  type:"boss",    name:"BOSS: Sphinx" },
+    { x:23, y:10, type:"boss",    name:"BOSS: Riddler" },
   ];
 
   healthPacks = [
     { x:5,  y:5  },
     { x:15, y:12 },
     { x:8,  y:18 },
+    { x:11, y:10 },
+    { x:21, y:6  },
   ];
 
   treasure = { x:23, y:18 };
+  treasureUnlocked = false;
   score    = 0;
   streak   = 0;
   kills    = 0;
@@ -734,7 +758,7 @@ function initGame() {
   updateHUD();
   draw();
   clearLog();
-  log("▶ Quest begins! Find the treasure!", "highlight");
+  log("▶ Quest begins! Defeat ALL 19 enemies to unlock the treasure!", "highlight");
   log("Move with arrow keys or the on-screen buttons.", "");
 }
 
@@ -746,6 +770,10 @@ function updateHUD() {
   document.getElementById("scoreVal").textContent = score;
   document.getElementById("killVal").textContent  = kills;
   document.getElementById("streakVal").textContent= streak;
+
+  const remaining = enemies.length;
+  const remEl = document.getElementById("remainVal");
+  if (remEl) remEl.textContent = remaining;
 
   const pct = (player.hp / MAX_HP * 100) + "%";
   const bar = document.getElementById("hpBar");
@@ -821,16 +849,26 @@ function draw() {
     ctx.fillText("+", hp.x*TILE+TILE/2, hp.y*TILE+TILE/2+4);
   });
 
-  // Treasure
-  ctx.fillStyle = "#ffd700";
-  ctx.shadowColor = "#ffd700";
-  ctx.shadowBlur = 16;
-  ctx.fillRect(treasure.x*TILE+2, treasure.y*TILE+2, TILE-4, TILE-4);
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = "#b8860b";
-  ctx.font = "10px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("★", treasure.x*TILE+TILE/2, treasure.y*TILE+TILE/2+3);
+  // Treasure (only when unlocked)
+  if (treasureUnlocked) {
+    ctx.fillStyle = "#ffd700";
+    ctx.shadowColor = "#ffd700";
+    ctx.shadowBlur = 16;
+    ctx.fillRect(treasure.x*TILE+2, treasure.y*TILE+2, TILE-4, TILE-4);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#b8860b";
+    ctx.font = "10px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("★", treasure.x*TILE+TILE/2, treasure.y*TILE+TILE/2+3);
+  } else {
+    // Locked chest — dim grey with lock icon
+    ctx.fillStyle = "#333355";
+    ctx.fillRect(treasure.x*TILE+2, treasure.y*TILE+2, TILE-4, TILE-4);
+    ctx.fillStyle = "#555577";
+    ctx.font = "9px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("🔒", treasure.x*TILE+TILE/2, treasure.y*TILE+TILE/2+3);
+  }
 
   // Enemies
   enemies.forEach(e => {
@@ -899,7 +937,11 @@ function move(dir) {
 
   // Check treasure
   if (player.x === treasure.x && player.y === treasure.y) {
-    endGame(true);
+    if (treasureUnlocked) {
+      endGame(true);
+    } else {
+      log(`🔒 Treasure is locked! Defeat all enemies first. (${enemies.length} remaining)`, "bad");
+    }
   }
 }
 
@@ -975,6 +1017,14 @@ function submitChoice(chosen, q, enemy, enemyIdx) {
     kills++;
     log(`✔ Answered correctly! [+${bonus} pts]`, "good");
     enemies.splice(enemyIdx, 1);
+    // Unlock treasure when all enemies are gone
+    if (enemies.length === 0) {
+      treasureUnlocked = true;
+      log("🏆 ALL ENEMIES DEFEATED! The treasure chest has unlocked!", "gold");
+      log("▶ Head to the ★ in the bottom-right corner!", "highlight");
+    } else {
+      log(`⚔ ${enemies.length} enemies remaining.`, "");
+    }
   } else {
     fb.textContent = "✗ WRONG! You lose 1 HP.";
     fb.className = "feedback-text wrong-fb";
